@@ -9,16 +9,13 @@ module Spaceship::TestFlight
     attr_mapping({
       'id' => :id,
       'name' => :name,
+      'appAdamId' => :app_id,
       'isDefaultExternalGroup' => :is_default_external_group
     })
 
     def self.all(app_id: nil)
       groups = client.get_groups(app_id: app_id)
-      groups.map do |g|
-        current_element = self.new(g)
-        current_element.app_id = app_id
-        current_element
-      end
+      groups.map { |g| self.new(g) }
     end
 
     def self.find(app_id: nil, group_name: nil)
