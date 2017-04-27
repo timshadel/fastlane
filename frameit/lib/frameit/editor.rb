@@ -271,11 +271,20 @@ module Frameit
 
       self.top_space_above_device += actual_font_size + vertical_padding
 
+      current_font = font(:keyword)
+      text = fetch_text(:keyword)
+      m = metrics(text, current_font, actual_font_size)
+      keyword_offset = m["ascent"].to_i - keyword.height
+      current_font = font(:title)
+      text = fetch_text(:title)
+      m = metrics(text, current_font, actual_font_size)
+      title_offset = m["ascent"].to_i - title.height
+
       # First, put the keyword on top of the screenshot, if we have one
       if keyword
         background = background.composite(keyword, "png") do |c|
           c.compose "Over"
-          c.geometry "+#{left_space}+#{top_space}"
+          c.geometry "+#{left_space}+#{top_space+keyword_offset}"
         end
 
         left_space += keyword.width + (keyword_padding * smaller)
@@ -284,9 +293,19 @@ module Frameit
       # Then, put the title on top of the screenshot next to the keyword
       background = background.composite(title, "png") do |c|
         c.compose "Over"
-        c.geometry "+#{left_space}+#{top_space}"
+        c.geometry "+#{left_space}+#{top_space+title_offset}"
       end
       background
+    end
+
+    def metrics(text, font, pointsize)
+      metrics = `convert -debug annotate  xc: -font #{font} -pointsize #{pointsize} -annotate 0 "#{text.gsub(/\n/, '\\\n')}" null: 2>&1 | grep Metrics: | sed -e 's/Metrics: //'`.chomp
+      attribs = metrics.split(';')
+      attribs = attribs.map do |a|
+        field, *values = a.split(':')
+        [field.strip!, values.join(':').strip!]
+      end
+      attribs.to_h
     end
 
     def actual_font_size
